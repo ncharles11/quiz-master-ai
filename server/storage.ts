@@ -1,38 +1,45 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { db } from "./db";
+import {
+  quizzes, results,
+  type Quiz, type Result,
+  type QuizContent,
+  type Question
+} from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  createQuiz(originalFilename: string, quizContent: QuizContent): Promise<Quiz>;
+  getQuiz(id: number): Promise<Quiz | undefined>;
+  getAllQuizzes(): Promise<Quiz[]>;
+  createResult(quizId: number, score: number, totalQuestions: number): Promise<Result>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  async createQuiz(originalFilename: string, quizContent: QuizContent): Promise<Quiz> {
+    const [quiz] = await db.insert(quizzes).values({
+      originalFilename,
+      quizContent,
+    }).returning();
+    return quiz;
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getQuiz(id: number): Promise<Quiz | undefined> {
+    const [quiz] = await db.select().from(quizzes).where(eq(quizzes.id, id));
+    return quiz;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async getAllQuizzes(): Promise<Quiz[]> {
+    return await db.select().from(quizzes).orderBy(desc(quizzes.createdAt));
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async createResult(quizId: number, score: number, totalQuestions: number): Promise<Result> {
+    const [result] = await db.insert(results).values({
+      quizId,
+      score,
+      totalQuestions,
+    }).returning();
+    return result;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
