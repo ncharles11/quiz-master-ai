@@ -14,6 +14,13 @@ export default function Home() {
   const handleGenerate = () => {
     if (!file) return;
     
+    // Clear any existing quiz data to prevent mixing
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.startsWith('quiz_data_') || key.startsWith('quiz_result_')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+    
     uploadQuiz.mutate(file, {
       onSuccess: (data) => {
         // Pass the generated data via location state is tricky in wouter
@@ -82,7 +89,7 @@ export default function Home() {
                 px-8 py-4 rounded-xl font-bold text-lg shadow-lg flex items-center gap-3
                 transition-all duration-300 transform
                 ${!file || uploadQuiz.isPending 
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed" 
+                  ? "bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed" 
                   : "bg-primary text-white hover:bg-primary/90 hover:shadow-primary/25 hover:shadow-xl hover:-translate-y-1 active:translate-y-0"
                 }
               `}
@@ -98,7 +105,7 @@ export default function Home() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="grid md:grid-cols-3 gap-8 pt-12 border-t"
+          className="grid md:grid-cols-3 gap-8 pt-12 border-t border-gray-200 dark:border-slate-700"
         >
           <FeatureCard 
             icon={<Brain className="w-6 h-6 text-indigo-500" />}
@@ -123,12 +130,12 @@ export default function Home() {
 
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
   return (
-    <div className="p-6 rounded-2xl bg-white border hover:shadow-lg transition-all duration-300">
-      <div className="w-12 h-12 rounded-lg bg-gray-50 flex items-center justify-center mb-4">
+    <div className="p-6 rounded-2xl bg-white dark:bg-slate-800 border dark:border-slate-700 hover:shadow-lg transition-all duration-300">
+      <div className="w-12 h-12 rounded-lg bg-gray-50 dark:bg-slate-700 flex items-center justify-center mb-4">
         {icon}
       </div>
-      <h3 className="font-bold font-display text-lg mb-2">{title}</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+      <h3 className="font-bold font-display text-lg mb-2 text-slate-900 dark:text-white">{title}</h3>
+      <p className="text-sm text-muted-foreground dark:text-slate-400 leading-relaxed">{description}</p>
     </div>
   );
 }

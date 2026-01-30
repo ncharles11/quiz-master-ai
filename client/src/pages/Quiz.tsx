@@ -29,7 +29,13 @@ export default function Quiz() {
       console.log("Frontend - Quiz data received:", parsed);
       console.log("Frontend - Questions count:", parsed.questions?.length);
       console.log("Frontend - First question structure:", parsed.questions?.[0]);
+      
+      // Reset quiz state when new data is loaded
       setQuizData(parsed);
+      setAnswers({});
+      setShowFeedback({});
+      setCurrentQuestionIndex(0);
+      setScore(0);
     } else {
       // If we don't have stored data (e.g. refresh), ideally fetch it
       // For this MVP, we might need to redirect home if we can't refetch inputs
@@ -135,7 +141,7 @@ export default function Quiz() {
               key={currentQuestionIndex}
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
-              className="modern-card p-6 md:p-8"
+              className="modern-card p-6 md:p-8 dark:bg-slate-800 dark:border-slate-700"
             >
               <div className="flex gap-4">
                 <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm">
@@ -246,10 +252,21 @@ export default function Quiz() {
         </div>
 
         <div className="sticky bottom-8 flex justify-center pt-4">
-          <div className="glass-card p-6 rounded-2xl w-full max-w-md flex items-center justify-between gap-4">
-            <div className="text-sm font-medium text-muted-foreground px-2">
-              Question {currentQuestionIndex + 1} / {quizData.questions.length}
-            </div>
+          <div className="glass-card p-6 rounded-2xl w-full max-w-md flex items-center justify-between gap-4 dark:bg-slate-800 dark:border-slate-700">
+            <button
+              onClick={() => {
+                // Clear all quiz data and return home
+                Object.keys(sessionStorage).forEach(key => {
+                  if (key.startsWith('quiz_data_') || key.startsWith('quiz_result_')) {
+                    sessionStorage.removeItem(key);
+                  }
+                });
+                setLocation("/");
+              }}
+              className="px-4 py-2 rounded-lg bg-gray-600 text-white font-medium hover:bg-gray-700 transition-colors"
+            >
+              New Quiz
+            </button>
             <div className="text-sm font-bold text-primary">
               Score : {score} / {quizData.questions.length}
             </div>

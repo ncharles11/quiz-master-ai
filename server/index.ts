@@ -4,6 +4,14 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { config } from "dotenv";
 
+// Polyfill DOMMatrix for pdf-parse
+global.DOMMatrix = class DOMMatrix {
+  constructor() {}
+  static fromFloat32Array() { return new DOMMatrix(); }
+  static fromFloat64Array() { return new DOMMatrix(); }
+  static fromMatrix() { return new DOMMatrix(); }
+} as any;
+
 // Load environment variables from .env file
 config();
 

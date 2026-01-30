@@ -4,14 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import multer from "multer";
-// Mock PDF parsing for local development
-const mockPdfParse = async (buffer: Buffer) => {
-  // For now, return a sample text to test the system
-  // In production, you'd implement real PDF parsing
-  return {
-    text: "Angular est un framework JavaScript développé par Google pour créer des applications web monopage. Angular utilise TypeScript et offre des fonctionnalités comme le data binding, l'injection de dépendances et les composants réutilisables. La structure d'un projet Angular comprend des modules, des composants, des services et des directives."
-  };
-};
+import PDFParser from "pdf2json";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { quizContentSchema } from "@shared/schema";
 
@@ -22,8 +15,11 @@ export async function registerRoutes(
   app: Express,
 ): Promise<Server> {
   // Create quiz from PDF
-  app.post("/api/quiz/upload", upload.single("file"), async (req, res) => {
+  app.post("/api/quiz/upload", upload.single("file"), async (req: any, res) => {
     try {
+      // Reset variables to prevent cache issues
+      let textContent = "";
+      
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
@@ -33,30 +29,53 @@ export async function registerRoutes(
           .status(500)
           .json({ message: "Gemini API Key not configured" });
       }
-
       
-      // 1. Extract text from PDF
-      let textContent = "";
+      // Clear memory cache
+      const { mockData } = await import("./db");
+      mockData.quizzes.splice(0, mockData.quizzes.length);
       try {
         console.log("PDF Upload received:", {
           filename: req.file.originalname,
           size: req.file.size,
           mimetype: req.file.mimetype,
+          bufferLength: req.file.buffer?.length || 0,
         });
 
-        // Ensure we are passing a Buffer
+        console.log("TAILLE DU BUFFER REÇU:", req.file.buffer.length);
+
+        // Ensure we are passing a fresh Buffer
         const buffer = Buffer.isBuffer(req.file.buffer)
           ? req.file.buffer
           : Buffer.from(req.file.buffer);
+          
+        console.log("Buffer created, length:", buffer.length);
 
-        const data = await mockPdfParse(buffer);
-        textContent = data.text;
+        // Extract text using pdf2json library
+        const pdfParser = new PDFParser(null, true);
+        
+        await new Promise<void>((resolve, reject) => {
+          pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+            try {
+              const extractedText = pdfParser.getRawTextContent() || "";
+              textContent = extractedText;
 
-        console.log(
-          "Extracted PDF Content (first 500 chars):",
-          textContent.substring(0, 500),
-        );
-        console.log("Total text length:", textContent.length);
+              console.log("Texte extrait avec succès, longueur:", textContent.length);
+              console.log("CONTENU RÉEL DU PDF :", textContent.substring(0, 200));
+              console.log("Total text length:", textContent.length);
+              
+              resolve();
+            } catch (error) {
+              reject(error);
+            }
+          });
+          
+          pdfParser.on("pdfParser_dataError", (errData: any) => {
+            console.error("PDF parsing error:", errData.parserError);
+            reject(new Error("Failed to parse PDF"));
+          });
+          
+          pdfParser.parseBuffer(req.file.buffer);
+        });
       } catch (error) {
         console.error("PDF Parsing Error:", error);
         return res.status(500).json({ message: "Failed to parse PDF" });
@@ -75,9 +94,7 @@ export async function registerRoutes(
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-      const prompt = `Génère exactement 5 questions basées sur le texte. RÉPONDS UNIQUEMENT AVEC UN TABLEAU JSON PUR. PAS DE TEXTE AVANT OU APRÈS. Format : [ { "question": "...", "options": ["...", "...", "...", "..."], "answer": 0, "explanation": "..." } ]
-
-Texte : ${textContent.slice(0, 15000)}`;
+      const prompt = `Génère un quiz de 5 questions basé EXCLUSIVEMENT sur ce texte : ${textContent.slice(0, 15000)}. Si le texte parle de Docker, tes questions doivent porter sur Docker (ex: adduser, containers, mariadb). Si le texte parle d'Angular, tes questions doivent porter sur Angular. RÉPONDS UNIQUEMENT AVEC UN TABLEAU JSON PUR. PAS DE TEXTE AVANT OU APRÈS. Format : [ { "question": "...", "options": ["...", "...", "...", "..."], "answer": 0, "explanation": "..." } ]`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;

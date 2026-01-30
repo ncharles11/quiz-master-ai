@@ -14,14 +14,19 @@ export interface IStorage {
 
 export class LocalStorage implements IStorage {
   async createQuiz(originalFilename: string, quizContent: QuizContent): Promise<Quiz> {
+    // Clear previous quizzes for persistence fix
+    mockData.quizzes.length = 0;
+    
     const quiz = {
-      id: mockData.nextQuizId,
+      id: Date.now(), // Use timestamp for unique ID
       originalFilename,
       quizContent,
       createdAt: new Date()
     };
+    
     mockData.quizzes.push(quiz);
-    mockData.nextQuizId++;
+    mockData.nextQuizId = Date.now() + 1; // Update next ID
+    
     return quiz;
   }
 
