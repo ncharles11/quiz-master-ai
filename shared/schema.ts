@@ -28,6 +28,7 @@ export const questionSchema = z.object({
   questionText: z.string(),
   options: z.array(z.string()),
   correctOptionIndex: z.number(), // 0-based index
+  explanation: z.string().optional(), // Explanation for why the answer is correct
 });
 
 export const quizContentSchema = z.object({
@@ -44,6 +45,8 @@ export type CreateQuizResponse = {
   questions: {
     questionText: string;
     options: string[];
+    correctOptionIndex: number;
+    explanation?: string;
   }[];
 };
 

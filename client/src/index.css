@@ -8,60 +8,60 @@
   --font-body: 'DM Sans', sans-serif;
   --font-display: 'Outfit', sans-serif;
 
-  /* Intellectual/Modern Edtech Palette */
-  --background: 260 30% 98%;
-  --foreground: 260 20% 15%;
+  /* Educational Soft Blue Palette */
+  --background: 220 35% 97%;
+  --foreground: 220 25% 20%;
   
-  --primary: 262 80% 50%;
+  --primary: 215 85% 55%;
   --primary-foreground: 210 40% 98%;
   
-  --secondary: 260 20% 92%;
-  --secondary-foreground: 260 20% 15%;
+  --secondary: 220 20% 95%;
+  --secondary-foreground: 220 25% 20%;
   
-  --muted: 260 10% 94%;
-  --muted-foreground: 260 10% 45%;
+  --muted: 220 15% 92%;
+  --muted-foreground: 220 10% 50%;
   
-  --accent: 180 80% 40%;
+  --accent: 190 75% 45%;
   --accent-foreground: 210 40% 98%;
   
-  --destructive: 0 84% 60%;
+  --destructive: 0 75% 55%;
   --destructive-foreground: 210 40% 98%;
 
   --card: 0 0% 100%;
-  --card-foreground: 260 20% 15%;
+  --card-foreground: 220 25% 20%;
   
-  --border: 260 15% 90%;
-  --input: 260 15% 90%;
-  --ring: 262 80% 50%;
+  --border: 220 20% 88%;
+  --input: 220 20% 88%;
+  --ring: 215 85% 55%;
 
   --radius: 0.75rem;
 }
 
 .dark {
-  --background: 260 40% 10%;
-  --foreground: 210 40% 98%;
+  --background: 220 35% 12%;
+  --foreground: 210 40% 95%;
   
-  --primary: 262 80% 60%;
+  --primary: 215 85% 65%;
   --primary-foreground: 210 40% 98%;
   
-  --secondary: 260 20% 20%;
-  --secondary-foreground: 210 40% 98%;
+  --secondary: 220 20% 18%;
+  --secondary-foreground: 210 40% 95%;
   
-  --muted: 260 20% 20%;
-  --muted-foreground: 215 20% 65%;
+  --muted: 220 20% 18%;
+  --muted-foreground: 215 20% 70%;
   
-  --accent: 180 80% 45%;
+  --accent: 190 75% 50%;
   --accent-foreground: 210 40% 98%;
   
-  --destructive: 0 62% 30%;
+  --destructive: 0 65% 45%;
   --destructive-foreground: 210 40% 98%;
   
-  --card: 260 40% 12%;
-  --card-foreground: 210 40% 98%;
+  --card: 220 35% 15%;
+  --card-foreground: 210 40% 95%;
   
-  --border: 260 20% 20%;
-  --input: 260 20% 20%;
-  --ring: 262 80% 60%;
+  --border: 220 20% 18%;
+  --input: 220 20% 18%;
+  --ring: 215 85% 65%;
 }
 
 @layer base {
@@ -80,7 +80,11 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-card/80 backdrop-blur-md border border-white/20 shadow-xl;
+    @apply bg-card/90 backdrop-blur-md border border-white/30 shadow-2xl;
+  }
+  
+  .modern-card {
+    @apply bg-white rounded-2xl shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300;
   }
   
   .animate-in {

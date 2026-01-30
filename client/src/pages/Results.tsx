@@ -64,7 +64,7 @@ export default function Results() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-3xl p-8 md:p-12 shadow-xl border border-gray-100 text-center relative overflow-hidden"
+          className="glass-card p-8 md:p-16 text-center relative overflow-hidden"
         >
           <div className={`absolute top-0 left-0 w-full h-2 ${gradeBg.replace("bg-", "bg-opacity-50 bg-")}`} />
           
@@ -76,14 +76,17 @@ export default function Results() {
             <h1 className="text-4xl font-display font-bold mb-2">
               {message}
             </h1>
+            <p className="text-2xl font-bold text-primary mb-8">
+              {results.score} / {results.total}
+            </p>
             <p className="text-muted-foreground mb-8">
               You scored <span className={`font-bold text-xl ${gradeColor}`}>{percentage}%</span> on this quiz
             </p>
             
             <div className="flex justify-center gap-4">
               <Link href="/">
-                <button className="px-6 py-3 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition-colors flex items-center gap-2">
-                  <RotateCcw className="w-4 h-4" />
+                <button className="px-8 py-4 rounded-xl bg-primary text-white font-semibold hover:bg-primary/90 transition-colors flex items-center gap-2 text-lg">
+                  <RotateCcw className="w-5 h-5" />
                   Try Another PDF
                 </button>
               </Link>
@@ -103,7 +106,7 @@ export default function Results() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 + 0.3 }}
               className={`
-                bg-white rounded-2xl p-6 border-l-4 shadow-sm
+                bg-white rounded-2xl p-6 border-l-4 shadow-lg hover:shadow-xl transition-all duration-300
                 ${item.isCorrect ? "border-l-green-500" : "border-l-red-500"}
               `}
             >

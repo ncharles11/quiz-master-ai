@@ -6,8 +6,10 @@ import { z } from "zod";
 import multer from "multer";
 // Mock PDF parsing for local development
 const mockPdfParse = async (buffer: Buffer) => {
+  // For now, return a sample text to test the system
+  // In production, you'd implement real PDF parsing
   return {
-    text: "This is a sample PDF content for testing purposes. It contains some basic information that can be used to generate quiz questions. The content is intentionally simple to ensure the quiz generation works properly."
+    text: "Angular est un framework JavaScript développé par Google pour créer des applications web monopage. Angular utilise TypeScript et offre des fonctionnalités comme le data binding, l'injection de dépendances et les composants réutilisables. La structure d'un projet Angular comprend des modules, des composants, des services et des directives."
   };
 };
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -66,11 +68,16 @@ export async function registerRoutes(
           .json({ message: "PDF text is too short to generate a quiz." });
       }
 
+      console.log("DEBUG TEXTE PDF:", textContent.substring(0, 500));
+      console.log("CONTENU RÉEL ENVOYÉ À L'IA:", textContent);
+      
       // 2. Generate Quiz using Gemini
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-      const prompt = `Génère 5 questions de quiz à choix multiples au format JSON STRICT. Retourne UNIQUEMENT le JSON sans aucun texte avant ou après. Le format doit être exactement:\n{\n  "questions": [\n    {\n      "questionText": "Question ici",\n      "options": ["Option A", "Option B", "Option C", "Option D"],\n      "correctOptionIndex": 0\n    }\n  ]\n}\n\nTexte à analyser:\n${textContent.slice(0, 15000)}`;
+      const prompt = `Génère exactement 5 questions basées sur le texte. RÉPONDS UNIQUEMENT AVEC UN TABLEAU JSON PUR. PAS DE TEXTE AVANT OU APRÈS. Format : [ { "question": "...", "options": ["...", "...", "...", "..."], "answer": 0, "explanation": "..." } ]
+
+Texte : ${textContent.slice(0, 15000)}`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -81,31 +88,34 @@ export async function registerRoutes(
       }
 
       // Extract JSON from response
-      let jsonContent = content;
+      // On cherche l'index du premier '[' et du dernier ']'
+      const firstBracket = content.indexOf('[');
+      const lastBracket = content.lastIndexOf(']');
       
-      // Try to find JSON in the response
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        jsonContent = jsonMatch[0];
-      } else if (content.includes('```json')) {
-        jsonContent = content.replace(/```json\n?|```/g, '').trim();
-      } else if (content.includes('```')) {
-        jsonContent = content.replace(/```\n?|```/g, '').trim();
+      if (firstBracket === -1 || lastBracket === -1) {
+        throw new Error("Format JSON invalide reçu de l'IA");
       }
 
-      console.log("Gemini raw response:", content);
-      console.log("Extracted JSON:", jsonContent);
-
-      const parsedContent = JSON.parse(jsonContent);
+      // On ne garde que ce qu'il y a entre les crochets (inclus)
+      const cleanJson = content.substring(firstBracket, lastBracket + 1);
+      const quizData = JSON.parse(cleanJson);
+      
+      console.log("RÉPONSE BRUTE GEMINI:", content);
+      console.log("Clean JSON:", cleanJson);
+      console.log("Parsed content (questions count):", quizData.length);
       
       // Transform to match expected schema
       const validatedContent = {
-        questions: parsedContent.questions || parsedContent.map((q: any) => ({
-          questionText: q.titre || q.questionText || q.question,
+        questions: quizData.map((q: any) => ({
+          questionText: q.question,
           options: q.options,
-          correctOptionIndex: q.correctOptionIndex || q.bonneReponse || q.correctAnswer
+          correctOptionIndex: q.answer,
+          explanation: q.explanation || ""
         }))
       };
+      
+      console.log("Validated content (questions count):", validatedContent.questions.length);
+      console.log("Validated content:", JSON.stringify(validatedContent, null, 2));
 
       // 3. Save to DB
       const quiz = await storage.createQuiz(
@@ -113,16 +123,25 @@ export async function registerRoutes(
         validatedContent,
       );
 
-      // 4. Return sanitized quiz (without answers)
-      const sanitizedQuestions = validatedContent.questions.map((q: any) => ({
+      // 4. Return quiz with answers for frontend validation
+      const responseQuestions = validatedContent.questions.map((q: any) => ({
         questionText: q.questionText,
         options: q.options,
+        correctOptionIndex: q.correctOptionIndex,
+        explanation: q.explanation
       }));
+      
+      console.log("Response questions count:", responseQuestions.length);
+      console.log("Final quiz response:", JSON.stringify({
+        id: quiz.id,
+        originalFilename: quiz.originalFilename,
+        questions: responseQuestions
+      }, null, 2));
 
       res.status(201).json({
         id: quiz.id,
         originalFilename: quiz.originalFilename,
-        questions: sanitizedQuestions,
+        questions: responseQuestions,
       });
     } catch (error) {
       console.error("Quiz Generation Error:", error);
