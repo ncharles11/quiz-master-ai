@@ -31,8 +31,22 @@ export async function registerRoutes(
       // 1. Extract text from PDF
       let textContent = "";
       try {
-        const data = await pdf(req.file.buffer);
+        console.log("PDF Upload received:", {
+          filename: req.file.originalname,
+          size: req.file.size,
+          mimetype: req.file.mimetype
+        });
+
+        // Ensure we are passing a Buffer
+        const buffer = Buffer.isBuffer(req.file.buffer) 
+          ? req.file.buffer 
+          : Buffer.from(req.file.buffer);
+
+        const data = await pdf(buffer);
         textContent = data.text;
+        
+        console.log("Extracted PDF Content (first 500 chars):", textContent.substring(0, 500));
+        console.log("Total text length:", textContent.length);
       } catch (error) {
         console.error("PDF Parsing Error:", error);
         return res.status(500).json({ message: "Failed to parse PDF" });
