@@ -1,11 +1,9 @@
-import { db } from "./db";
 import {
-  quizzes, results,
   type Quiz, type Result,
   type QuizContent,
   type Question
 } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { mockData } from "./db";
 
 export interface IStorage {
   createQuiz(originalFilename: string, quizContent: QuizContent): Promise<Quiz>;
@@ -14,32 +12,39 @@ export interface IStorage {
   createResult(quizId: number, score: number, totalQuestions: number): Promise<Result>;
 }
 
-export class DatabaseStorage implements IStorage {
+export class LocalStorage implements IStorage {
   async createQuiz(originalFilename: string, quizContent: QuizContent): Promise<Quiz> {
-    const [quiz] = await db.insert(quizzes).values({
+    const quiz = {
+      id: mockData.nextQuizId,
       originalFilename,
       quizContent,
-    }).returning();
+      createdAt: new Date()
+    };
+    mockData.quizzes.push(quiz);
+    mockData.nextQuizId++;
     return quiz;
   }
 
   async getQuiz(id: number): Promise<Quiz | undefined> {
-    const [quiz] = await db.select().from(quizzes).where(eq(quizzes.id, id));
-    return quiz;
+    return mockData.quizzes.find((q: any) => q.id === id);
   }
 
   async getAllQuizzes(): Promise<Quiz[]> {
-    return await db.select().from(quizzes).orderBy(desc(quizzes.createdAt));
+    return [...mockData.quizzes].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
   async createResult(quizId: number, score: number, totalQuestions: number): Promise<Result> {
-    const [result] = await db.insert(results).values({
+    const result = {
+      id: mockData.nextResultId,
       quizId,
       score,
       totalQuestions,
-    }).returning();
+      createdAt: new Date()
+    };
+    mockData.results.push(result);
+    mockData.nextResultId++;
     return result;
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new LocalStorage();
